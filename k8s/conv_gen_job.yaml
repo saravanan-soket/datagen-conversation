@@ -1,0 +1,66 @@
+# Indexed Job: 20 pods, each runs every 20th spec of data/task_bank
+# (pod i takes global spec indices i, i+20, i+40, ...). Pods mount the repo
+# from the host, so generate the task bank and fill .env on the host first.
+#
+#   kubectl apply -f k8s/conv_gen_job.yaml
+#   kubectl get pods -l app=conv-gen
+#   python -m convgen.status --traces data/traces
+#
+# Edit REPO below (and the hostPath volume) to where this repo is checked out.
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: conv-gen-20pods
+  namespace: default
+  labels:
+    app: conv-gen
+spec:
+  completions: 20
+  parallelism: 20
+  completionMode: Indexed
+  backoffLimit: 3
+  template:
+    metadata:
+      labels:
+        app: conv-gen
+    spec:
+      hostNetwork: true
+      restartPolicy: Never
+      containers:
+      - name: worker
+        image: python:3.11-slim
+        imagePullPolicy: IfNotPresent
+        command:
+        - /bin/bash
+        - -c
+        - |
+          set -e
+          REPO="/projects/data/datasets/code_data/synthetic_conversation/datagen-conversation"
+          cd "$REPO"
+          echo "=== Worker $JOB_COMPLETION_INDEX/$TOTAL_WORKERS on $(hostname) ==="
+          pip install -q -r requirements.txt
+          python -u -m convgen.run \
+            --spec data/task_bank \
+            --out data/traces \
+            --worker-id "$JOB_COMPLETION_INDEX" \
+            --total-workers "$TOTAL_WORKERS" \
+            --workers 2 \
+            --run-id "k8s-$(date -u +%Y%m%d)"
+        env:
+        - name: TOTAL_WORKERS
+          value: "20"
+        resources:
+          requests:
+            cpu: "1"
+            memory: "1Gi"
+          limits:
+            cpu: "2"
+            memory: "4Gi"
+        volumeMounts:
+        - mountPath: /projects/data/datasets/code_data/synthetic_conversation
+          name: workspace-vol
+      volumes:
+      - name: workspace-vol
+        hostPath:
+          path: /projects/data/datasets/code_data/synthetic_conversation
+          type: Directory

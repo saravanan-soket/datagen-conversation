@@ -1,0 +1,15 @@
+[project]
+name = "datagen-conversation"
+version = "0.1.0"
+description = "Multilingual 2-person synthetic conversation generator with Langfuse traces"
+requires-python = ">=3.10"
+dependencies = ["requests>=2.28"]
+
+[project.scripts]
+convgen-task-bank = "convgen.task_bank:main"
+convgen-run = "convgen.run:main"
+convgen-upload = "convgen.upload_traces:main"
+convgen-status = "convgen.status:main"
+
+[tool.setuptools]
+packages = ["convgen"]

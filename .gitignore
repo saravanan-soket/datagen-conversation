@@ -1,0 +1,18 @@
+# secrets
+.env
+
+# generated data — regenerate locally, never commit (see README)
+data/task_bank/*
+!data/task_bank/.gitkeep
+data/traces/*
+!data/traces/.gitkeep
+*.jsonl.tmp
+*.json.tmp
+
+# python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+*.egg-info/
+.pytest_cache/
